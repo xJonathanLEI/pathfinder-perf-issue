@@ -16,44 +16,46 @@ async fn main() {
 
     let client = JsonRpcClient::new(HttpTransport::new(rpc_url));
 
-    let start_time = Instant::now();
-    let start_block = client
-        .get_block_by_number(&BlockNumOrTag::Tag(BlockTag::Latest))
-        .await
-        .unwrap();
-    let time_elapsed = Instant::now() - start_time;
-
-    println!(
-        "Current block number: #{}, Time: {}ms",
-        start_block.metadata.block_number,
-        time_elapsed.as_millis()
-    );
-    println!(
-        "Querying for the next block #{} directly",
-        start_block.metadata.block_number + 1
-    );
-
     loop {
         let start_time = Instant::now();
-        let next_block = match client
-            .get_block_by_number(&BlockNumOrTag::Number(
-                start_block.metadata.block_number + 1,
-            ))
+        let start_block = client
+            .get_block_by_number(&BlockNumOrTag::Tag(BlockTag::Latest))
             .await
-        {
-            Ok(block) => block,
-            Err(_) => continue, // The block likely isn't available yet
-        };
+            .unwrap();
         let time_elapsed = Instant::now() - start_time;
 
         println!(
-            "Block: #{}. Time: {}ms",
-            next_block.metadata.block_number,
+            "Current block number: #{}, Time: {}ms",
+            start_block.metadata.block_number,
             time_elapsed.as_millis()
         );
+        println!(
+            "Querying for the next block #{} directly",
+            start_block.metadata.block_number + 1
+        );
 
-        if next_block.metadata.block_number != start_block.metadata.block_number {
-            break;
+        loop {
+            let start_time = Instant::now();
+            let next_block = match client
+                .get_block_by_number(&BlockNumOrTag::Number(
+                    start_block.metadata.block_number + 1,
+                ))
+                .await
+            {
+                Ok(block) => block,
+                Err(_) => continue, // The block likely isn't available yet
+            };
+            let time_elapsed = Instant::now() - start_time;
+
+            println!(
+                "Block: #{}. Time: {}ms",
+                next_block.metadata.block_number,
+                time_elapsed.as_millis()
+            );
+
+            if next_block.metadata.block_number != start_block.metadata.block_number {
+                break;
+            }
         }
     }
 }
