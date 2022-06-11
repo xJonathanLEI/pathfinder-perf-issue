@@ -1,0 +1,9 @@
+[package]
+name = "pathfinder-perf-issue"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+starknet = { git = "https://github.com/xJonathanLEI/starknet-rs" }
+tokio = { version = "1.19.2", features = ["full"] }
+url = "2.2.2"
