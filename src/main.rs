@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use rand::{thread_rng, Rng};
 use starknet::providers::jsonrpc::{
     models::{BlockNumOrTag, BlockTag},
     HttpTransport, JsonRpcClient,
@@ -16,46 +17,27 @@ async fn main() {
 
     let client = JsonRpcClient::new(HttpTransport::new(rpc_url));
 
-    loop {
+    let latest_block = client
+        .get_block_by_number(&BlockNumOrTag::Tag(BlockTag::Latest))
+        .await
+        .unwrap();
+
+    let mut rng = thread_rng();
+
+    for _ in 0..10 {
+        let random_block_number = rng.gen_range(0..latest_block.metadata.block_number);
+
         let start_time = Instant::now();
-        let start_block = client
-            .get_block_by_number(&BlockNumOrTag::Tag(BlockTag::Latest))
+        let current_block = client
+            .get_block_by_number(&BlockNumOrTag::Number(random_block_number))
             .await
             .unwrap();
         let time_elapsed = Instant::now() - start_time;
 
         println!(
-            "Current block number: #{}, Time: {}ms",
-            start_block.metadata.block_number,
+            "Current block: #{}. Time: {}ms",
+            current_block.metadata.block_number,
             time_elapsed.as_millis()
         );
-        println!(
-            "Querying for the next block #{} directly",
-            start_block.metadata.block_number + 1
-        );
-
-        loop {
-            let start_time = Instant::now();
-            let next_block = match client
-                .get_block_by_number(&BlockNumOrTag::Number(
-                    start_block.metadata.block_number + 1,
-                ))
-                .await
-            {
-                Ok(block) => block,
-                Err(_) => continue, // The block likely isn't available yet
-            };
-            let time_elapsed = Instant::now() - start_time;
-
-            println!(
-                "Block: #{}. Time: {}ms",
-                next_block.metadata.block_number,
-                time_elapsed.as_millis()
-            );
-
-            if next_block.metadata.block_number != start_block.metadata.block_number {
-                break;
-            }
-        }
     }
 }
